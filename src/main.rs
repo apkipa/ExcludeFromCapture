@@ -34,7 +34,7 @@ use std::sync::{Arc, RwLock};
 use std::thread;
 use windows::{IInspectable, Interface};
 use winit::{
-    dpi::PhysicalSize,
+    dpi::{PhysicalSize, LogicalSize},
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
@@ -109,7 +109,7 @@ fn get_brushes_pack() -> windows::Result<BrushesPack> {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let window_inner_size = PhysicalSize {
+    let window_inner_size = LogicalSize {
         width: 350,
         height: 400,
     };
@@ -120,6 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_resizable(false)
         .with_visible(false)
         .build(&event_loop)?;
+    let window_inner_size: PhysicalSize<u32> = window.inner_size();
 
     // Rc seems OK, but we prefer Arc in case of (?) data race
     let stored_hwnd_lock = Arc::new(RwLock::new(HWND::NULL));
@@ -137,8 +138,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             HWND_TOP,
             0,
             0,
-            window_inner_size.width,
-            window_inner_size.height,
+            window_inner_size.width as _,
+            window_inner_size.height as _,
             SWP_SHOWWINDOW,
         );
     };

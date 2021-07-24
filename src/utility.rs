@@ -266,7 +266,7 @@ pub fn find_target_window_from_point(pt: &POINT) -> HWND {
         target_hwnd: HWND::NULL,
     };
     unsafe {
-        EnumWindows(Some(enum_windows_proc), LPARAM(&mut params as *mut _ as _));
+        EnumWindows(Some(enum_windows_proc), LPARAM(addr_of_mut!(params) as _));
     }
     params.target_hwnd
 }
@@ -426,11 +426,11 @@ pub fn hide_window_from_capture(hwnd: HWND) -> bool {
     // Create pipe
     #[repr(C)]
     struct PipeDllParams {
-        target_hwnd: HWND,
+        target_hwnd: u32,
         affinity: u32,
     }
     let mut params = PipeDllParams {
-        target_hwnd: hwnd,
+        target_hwnd: hwnd.0 as _,
         affinity: WDA_EXCLUDEFROMCAPTURE.0,
     };
     let pipe_handle = unsafe {
@@ -454,9 +454,8 @@ pub fn hide_window_from_capture(hwnd: HWND) -> bool {
 
     // Create process for injection
     let mut redir_data = MaybeUninit::uninit();
-    if unsafe { Wow64DisableWow64FsRedirection(redir_data.as_mut_ptr()) } == false {
-        return false;
-    }
+    // Ignore the error; self process may be native
+    unsafe { Wow64DisableWow64FsRedirection(redir_data.as_mut_ptr()); }
     let redir_data = unsafe { redir_data.assume_init() };
     let status = process::Command::new(target_mavinject_name)
         .arg(target_pid.to_string())
